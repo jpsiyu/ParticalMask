@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MaskParticle : MonoBehaviour {
 
@@ -9,7 +10,6 @@ public class MaskParticle : MonoBehaviour {
     Vector3[] corners = new Vector3[4];
 
     private void Awake() {
-        maskRect = GetComponent<RectTransform>();
         InitCorners();
     }
 
@@ -17,7 +17,26 @@ public class MaskParticle : MonoBehaviour {
         TraverseParticles(transform);
     }
 
+    private void FindMask() {
+        Transform start = transform;
+        Transform parent;
+        Mask mask;
+        while (maskRect == null) {
+            parent = start.parent;
+            if (parent == null) break;
+            mask = parent.GetComponent<Mask>();
+            if (mask == null) {
+                start = parent;
+            }
+            else {
+                maskRect = parent.GetComponent<RectTransform>();
+            }
+        }
+    }
+
     private void InitCorners() {
+        FindMask();
+        if (maskRect == null) return;
         maskRect.GetWorldCorners(corners);
     }
 
@@ -30,6 +49,7 @@ public class MaskParticle : MonoBehaviour {
 
     private void SetCorners(Transform child) {
         if (corners.Length == 0) return;
+        if (maskRect == null) return;
 
         Renderer r = child.GetComponent<Renderer>();
         if (r == null) return;
@@ -37,7 +57,9 @@ public class MaskParticle : MonoBehaviour {
         Material material = r.material;
         if (material == null) return;
 
-        if (! material.shader.name.Equals("Custom/MaskAdditive")) return;
+        if (!material.shader.name.Equals("Custom/MaskAdditive")) {
+            material.shader = Shader.Find("Custom/MaskAdditive");
+        }
 
         material.SetFloat("_MinX", corners[0].x);
         material.SetFloat("_MaxX", corners[2].x);
